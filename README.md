@@ -1,62 +1,98 @@
 # 💳 SpendWise — Expense Tracker + ML Forecasting
 
-A full-stack personal expense tracker built with Flask, HTML/CSS, SQLite and machine learning. The original project was a CLI that stored expenses in CSV and used basic Linear Regression; it is now upgraded into a usable web application with analytics and an ML forecasting page.
+SpendWise is a full-stack personal expense tracker built with **Flask, HTML/CSS, Chart.js, SQLite and scikit-learn**. It upgrades the original CLI tracker into a usable web application with analytics and machine-learning forecasting.
 
-## Features
-- Responsive dashboard with KPI cards and charts
-- Add and delete expenses
+## ✨ Features
+- Responsive dashboard with KPI cards
+- Add, edit and delete expenses
 - SQLite persistent storage
 - Category and monthly analytics
+- Spending trend and category charts
 - ML-powered daily expense forecasting
-- Validation metrics (MAE, RMSE and R² when available)
-- JSON dashboard endpoint
-- Clean separation of web, database and ML logic
+- Chronological validation metrics: MAE, RMSE and R² when calculable
+- JSON dashboard and prediction APIs
+- Health endpoint for deployment checks
+- Reproducible demo-data seeder
+- Production WSGI start command
 
-## Dataset used for ML
-**The production model is trained on the user's recorded tracker data, not a random Kaggle dataset.** Each expense entered in the application is stored in SQLite. For forecasting, transactions are aggregated by date into daily spending totals.
+## 🧠 ML dataset
+There is **no external Kaggle dataset pretending to represent the user**. The forecasting model is trained on the expense history stored by the application.
 
-This is deliberately a **personal time-series forecasting problem**. A generic public dataset would not accurately represent an individual's spending behavior. The repository starts without fabricated personal spending history, so the app does not pretend that invented data represents the user.
+Each transaction contains:
+`date`, `category`, `amount`, `notes`
 
-The ML forecast becomes available after expenses exist on at least 3 different days. As the app is used, the training dataset grows naturally from real tracker history.
+For the forecasting task, transactions are aggregated by date:
 
-## Model
-The forecasting service uses Polynomial Regression (degree 2) over elapsed day number. It performs an 80/20 chronological validation split when enough observations exist, reports MAE/RMSE/R², then retrains on all available history for production forecasts. Predictions are clipped at zero because negative spending is not meaningful.
+```text
+Transactions → Daily total spending → Time feature → ML model → Future daily forecast
+```
 
-> This is a learning/project forecasting system, not financial advice.
+The repository includes `seed_demo.py` to generate **60 days of clearly synthetic demo spending data**. This is only for demonstrating the dashboard immediately; it is not claimed to be real user data.
 
-## Run locally
+The model requires expenses across at least 3 different days. As the application is used, real tracker history can replace the demo data.
+
+## 🤖 Model
+The current model is **Polynomial Regression (degree 2)** over elapsed day number. An 80/20 chronological validation split is used when enough history exists. The service reports MAE/RMSE/R² and then retrains the final model on all available history for forecasting.
+
+This is a portfolio/learning forecasting system, not financial advice. With limited history, predictions can be poor; more history and stronger time-series features are required for serious forecasting.
+
+## 🏗️ Architecture
+
+```text
+Browser
+  │
+  ├── HTML/CSS + Chart.js
+  │
+  ▼
+Flask application
+  │
+  ├── SQLite database
+  │      └── expense history
+  │
+  └── ML service
+         ├── daily aggregation
+         ├── chronological validation
+         ├── Polynomial Regression
+         └── forecast + metrics
+```
+
+## 🚀 Run locally
 
 ```bash
 python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# macOS/Linux: source .venv/bin/activate
+
+# Windows
+.venv\\Scripts\\activate
+
+# macOS/Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
+python seed_demo.py   # optional: creates 60 days of demo data
 python app.py
 ```
 
-Open `http://127.0.0.1:5000` in your browser.
+Open `http://127.0.0.1:5000`.
 
-## Architecture
+To start production-style with Gunicorn:
 
-```text
-Browser (HTML/CSS + Chart.js)
-          ↓
-       Flask app
-       ↙       ↘
-   SQLite       ML service
-                   ↓
-          Daily spending history
-                   ↓
-          Polynomial Regression
-                   ↓
-             Forecast + metrics
+```bash
+gunicorn app:app
 ```
 
-## Next improvements
-- User authentication
-- Edit transactions
-- Budget limits and alerts
-- Better time-series models after enough history exists
-- CSV import/export
-- Docker deployment
-- Automated tests and CI
+## 📁 Important files
+- `app.py` — Flask application, routes and database access
+- `ml/model.py` — training, validation and prediction service
+- `seed_demo.py` — reproducible synthetic demo dataset
+- `templates/` — dashboard, expenses, analytics and ML pages
+- `static/css/style.css` — responsive UI
+- `requirements.txt` — Python dependencies
+- `Procfile` — WSGI web start command
+
+## 🔌 API
+- `GET /health` — service health
+- `GET /api/dashboard` — dashboard totals and daily history
+- `GET /api/predict?days=7` — ML forecast for 1–30 days
+
+## ⚠️ Limitations
+The current model uses a simple trend feature and should not be described as an advanced financial forecasting model. Future improvements could include richer calendar/category features, stronger time-series baselines, authentication, budgets, CSV import/export, tests, CI and Docker deployment.
