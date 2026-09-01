@@ -1,50 +1,62 @@
-# 📊 Expense Tracker with ML
+# 💳 SpendWise — Expense Tracker + ML Forecasting
 
-A lightweight Python command-line expense tracker that records spending history and uses a basic machine-learning model to explore future expense prediction.
+A full-stack personal expense tracker built with Flask, HTML/CSS, SQLite and machine learning. The original project was a CLI that stored expenses in CSV and used basic Linear Regression; it is now upgraded into a usable web application with analytics and an ML forecasting page.
 
-## ✨ Features
+## Features
+- Responsive dashboard with KPI cards and charts
+- Add and delete expenses
+- SQLite persistent storage
+- Category and monthly analytics
+- ML-powered daily expense forecasting
+- Validation metrics (MAE, RMSE and R² when available)
+- JSON dashboard endpoint
+- Clean separation of web, database and ML logic
 
-- ➕ Record daily expenses
-- 📋 View spending history
-- 💾 Persist records in a CSV file
-- 🤖 Predict future expenses using Linear Regression
-- 🐍 Simple Python CLI architecture
+## Dataset used for ML
+**The production model is trained on the user's recorded tracker data, not a random Kaggle dataset.** Each expense entered in the application is stored in SQLite. For forecasting, transactions are aggregated by date into daily spending totals.
 
-## 🧠 How It Works
+This is deliberately a **personal time-series forecasting problem**. A generic public dataset would not accurately represent an individual's spending behavior. The repository starts without fabricated personal spending history, so the app does not pretend that invented data represents the user.
 
-```text
-User Input
-    ↓
-Expense Records
-    ↓
-CSV Storage
-    ↓
-Historical Data
-    ↓
-Linear Regression
-    ↓
-Expense Prediction
+The ML forecast becomes available after expenses exist on at least 3 different days. As the app is used, the training dataset grows naturally from real tracker history.
+
+## Model
+The forecasting service uses Polynomial Regression (degree 2) over elapsed day number. It performs an 80/20 chronological validation split when enough observations exist, reports MAE/RMSE/R², then retrains on all available history for production forecasts. Predictions are clipped at zero because negative spending is not meaningful.
+
+> This is a learning/project forecasting system, not financial advice.
+
+## Run locally
+
+```bash
+python -m venv .venv
+# Windows: .venv\\Scripts\\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
 ```
 
-## 🛠️ Tech Stack
+Open `http://127.0.0.1:5000` in your browser.
 
-- Python
-- CSV
-- Linear Regression
+## Architecture
 
-## 🎯 What This Project Demonstrates
+```text
+Browser (HTML/CSS + Chart.js)
+          ↓
+       Flask app
+       ↙       ↘
+   SQLite       ML service
+                   ↓
+          Daily spending history
+                   ↓
+          Polynomial Regression
+                   ↓
+             Forecast + metrics
+```
 
-This project is a small example of combining traditional application logic with a machine-learning component. It is intentionally simple and serves as a foundation for adding richer analytics, better features and more robust prediction later.
-
-## 🚀 Future Improvements
-
-- Monthly spending dashboards
-- Category-based analytics
-- Better feature engineering
-- Multiple ML models
-- Model evaluation metrics
-- Web or desktop interface
-
-## ⚠️ Note
-
-The current prediction model is a basic learning implementation, not a financial forecasting system. Predictions should not be treated as financial advice.
+## Next improvements
+- User authentication
+- Edit transactions
+- Budget limits and alerts
+- Better time-series models after enough history exists
+- CSV import/export
+- Docker deployment
+- Automated tests and CI
